@@ -3,81 +3,63 @@ import FRP.Helm.Utilities
 import qualified FRP.Helm.Keyboard as Keyboard
 import qualified FRP.Helm.Window as Window
 import Data.List (elemIndex,findIndex)
-
-boardWidth = 7
-boardHeight = 6
-
---type Board [[Int]]
-{- 6x7 circles
-0 - empty
-1 - red
-2 - yellow
--}
-data State = State { currentColor :: Int,
-                     board :: [[Int]],
-                     keyboardBlock :: Bool --because we should filter the noise signals
-                   }
-
-setChip :: Int -> Int -> [[Int]] -> [[Int]]
-setChip col curColor board = map (\(row, y) -> map (\(colour, x) -> chipMap x y colour) row) enumBoard
-  where
-    enumBoard = zip (map (\x -> zip x [0..]) board) [0..]
-    targetRow = findIndex (/=0) $ map (!!col) board
-    chipMap x y colour = case targetRow of
-      Nothing -> if (x == col && y == boardHeight - 1) then curColor else colour
-      Just r  
-          | r > 0 -> if (x == col && y == r - 1) then curColor else colour
-          | otherwise -> colour
+import Board
+import GameUI
     
 step :: Maybe Int -> State -> State
-step Nothing (State { currentColor = currentColor, board = board, keyboardBlock = keyboardBlock }) =
-  State { currentColor = currentColor,
+step Nothing (State { gameState = gameState,
+                      currentPlayer = player,
+                      board = board,
+                      keyboardBlock = keyboardBlock }) =
+  State { gameState = gameState,
+          currentPlayer = player,
           board = board,
           keyboardBlock = False}
-step (Just col) (State { currentColor = currentColor, board = board, keyboardBlock = keyboardBlock }) =
+          
+step (Just col) (State { gameState = gameState,
+                         currentPlayer = player,
+                         board = board,
+                         keyboardBlock = keyboardBlock }) =
   if keyboardBlock then
-    State { currentColor = currentColor,
-          board = board,
-          keyboardBlock = True}
+    if notDead board then
+      oldBlockedState
+    else
+      finishState
   else
-    State { currentColor = (mod currentColor 2) + 1,
-            board = setChip col currentColor board,
-            keyboardBlock = True}
-
-stateColor :: Int -> Color
-stateColor 0 = white
-stateColor 1 = red
-stateColor 2 = yellow
-
-coordToForm :: Int -> Int -> (Form -> Form)
-coordToForm x y = move ((fromIntegral x) * 90 - 300, (fromIntegral y) * 90 - 250)
-
-stateToForm :: Int -> Int -> Int -> Form
-stateToForm x y color = coordToForm x y $ filled (stateColor color) $ circle 40
-
-stateToRenderlist :: (Int, Int) -> State -> [Form]
-stateToRenderlist (w,h) (State { currentColor = currentColor, board = board }) =
-  concat (map (\(row, y) -> map (\(colour, x) -> stateToForm x y colour) row) enumBoard)
+    case gameState of
+      0 -> brandnewState
+      1 -> case freeRow col board of
+            Nothing  -> oldBlockedState
+            Just row -> newBlockedState row
+      2 -> finishState
   where
-    enumBoard = zip (map (\x -> zip x [0..]) board) [0..]
-
+    oldBlockedState = State { gameState = gameState,
+                              currentPlayer = player,
+                              board = board,
+                              keyboardBlock = True}
+    newBlockedState row = State { gameState = gameState,
+                                  currentPlayer = (mod player 2) + 1,
+                                  board = setChip col row player board,
+                                  keyboardBlock = True}
+    brandnewState = State { gameState = 1,
+                            currentPlayer = 1,
+                            keyboardBlock = False,
+                            board = replicate boardHeight $ replicate boardWidth 0}
+    finishState = State { gameState = 2,
+                          currentPlayer = player,
+                          keyboardBlock = keyboardBlock,
+                          board = board}
+    
 render :: (Int, Int) -> State -> Element
-render (w, h) (State { currentColor = currentColor, board = board, keyboardBlock = keyboardBlock }) =
-  centeredCollage w h ((stateToRenderlist (w,h) (State { currentColor = currentColor,
-                                                         board = board,
-                                                         keyboardBlock = keyboardBlock }))) 
+render (w, h) state = centeredCollage w h (stateToRenderlist (w,h) state) 
 
 main :: IO ()
 main = run defaultConfig $ render <~ Window.dimensions ~~ stepper
   where
-    state = State { currentColor = 1,
+    state = State { gameState = 0,
+                    currentPlayer = 1,
                     keyboardBlock = False,
-                    board = [[0,0,0,0,0,0,0],
-                             [0,0,0,0,0,0,0],
-                             [0,0,0,0,0,0,0],
-                             [0,0,0,0,0,0,0],
-                             [0,0,0,2,0,0,0],
-                             [0,1,0,1,0,2,0]]}
+                    board = []}
     stepper = foldp step state (lift (elemIndex True) (combine [Keyboard.isDown Keyboard.Number1Key,
                                           Keyboard.isDown Keyboard.Number2Key,
                                           Keyboard.isDown Keyboard.Number3Key,
