@@ -11,26 +11,9 @@ boardHeight = 6 :: Int
 
 type Player = Int -- 0: none, 1: red, 2: yellow
 
-type GameState = Int -- 0: none, 1: inGame, 2: finish
-type GameType = Int -- 0: user vs user, 1: user vs ai
-
-data State = State { gameState :: GameState,
-                     currentPlayer :: Player,
-                     board :: Board,
-                     keyboardBlock :: Bool --because we should filter the noise signals
-                   }
-
 -- Enumerate board cells
 enumBoard :: Board -> EnumeratedBoard
 enumBoard board = zip (map (\x -> zip x [0..]) board) [0..]
-
--- Игрок ставит фишку на позицию i j
-makeMove :: Board -> Player -> Int -> Int -> Board
-makeMove b p i j = fst $ foldl (\(acc, k) x -> if (k == i) then (acc++[newRow x], k+1) 
-                                               else (acc ++ [x], k+1)) ([], 0) b
-  where
-    newRow row = fst $ foldl (\(acc, k) x -> if (k == j) then (acc ++ [p], k+1) 
-                                             else (acc ++ [x], k+1)) ([], 0) row
 
 -- Player set chip into (x, y). Yet another, but more readable. 
 setChip :: Int -> Int -> Player -> Board -> Board
@@ -47,28 +30,31 @@ freeRow col board = case findIndex (/=0) $ map (!!col) board of
                         | otherwise -> Nothing
 
 -- Все возможные ходы игрока
-possibleMoves :: Board -> Player -> [Board]
-possibleMoves b p = filter (not . null) $ zipWith 
-                    (\i j -> if i == -1 then [] else makeMove b p i j) indices [0..6]
+possibleMoves :: Player -> Board -> [Board]
+possibleMoves player board = filter (not . null) $ zipWith 
+         (\row j -> case row of
+                      Just i -> setChip j i player board
+                      Nothing -> []) indices [0..boardWidth-1]
   where
-    indices = zipWith findEmptyI (replicate 7 b) [0..6]
-    findEmptyI b j = fst $ foldr (\x (i, f) -> 
-                      if f then (if x !! j == 0 then (i, False) else (i-1, True)) 
-                      else (i, f)) (5, True) b
+    indices = zipWith freeRow [0..boardWidth-1] (replicate boardWidth board)
 
 -- Можно ли сделать какой-либо ход
 notDead :: Board -> Bool
-notDead b = or $ map (\x -> any (== 0) x) b 
+notDead board = or $ map (\x -> any (== 0) x) board 
 
 -- Получаем все диагонали
 getDiagonals :: Board -> [[Int]]
-getDiagonals b = zipWith diagonal iIndices jIndices
+getDiagonals board = zipWith diagonal iIndices jIndices
   where
-    diagonal is js = zipWith (\i j -> (b !! i) !! j) is js
+    diagonal is js = zipWith (\i j -> (board !! i) !! j) is js
     iInd = [[2,3,4,5], [1,2,3,4,5], [0,1,2,3,4,5], [0,1,2,3,4,5], [0,1,2,3,4], [0,1,2,3]]
     jInd = [[0,1,2,3], [0,1,2,3,4], [0,1,2,3,4,5], [1,2,3,4,5,6], [2,3,4,5,6], [3,4,5,6]]
     iIndices = iInd ++ (map reverse $ reverse iInd)
     jIndices = jInd ++ jInd
+
+-- Все строки, столбцы и диагонали (len >= 4) доски
+allLists :: Board -> [[Int]]
+allLists board = board ++ (transpose board) ++ (getDiagonals board)
 
 -- Есть ли собранная четверка в строке, 0 - нет собранной четверки
 hasConnectedFour :: [Int] -> Player
@@ -81,21 +67,55 @@ hasConnectedFour xs
 
 -- Выиграл ли кто-нибудь, 0 - никто не выиграл
 isWin :: Board -> Player
-isWin b = fromMaybe 0 $ find (/= 0) $ map hasConnectedFour allLists
-  where
-    allLists = b ++ (transpose b) ++ (getDiagonals b)
+isWin board = fromMaybe 0 $ find (/= 0) $ map hasConnectedFour (allLists board)
 
--- Количество открытых троек для каждого игрока
-countPieces :: Board -> (Int, Int)
-countPieces = undefined
-
+-- Разбиваем список на подсписки по 4 элемента
 divideToFour :: [Int] -> [[Int]]
 divideToFour [_,_,_] = []
 divideToFour xs = [take 4 xs] ++ (divideToFour (drop 1 xs))
 
-test = [[2,0,0,0,0,0,0], 
-        [2,0,0,0,1,0,0], 
-        [1,0,0,2,0,0,0], 
-        [2,0,1,0,0,0,0], 
-        [2,1,0,0,0,0,0], 
-        [2,0,0,2,2,1,2]] :: Board
+-- Есть ли открытая тройка в строке, 0 - нет открытой тройки
+hasOpenThree :: [Int] -> Player
+hasOpenThree xs
+  | delete 0 xs == [1,1,1] = 1
+  | delete 0 xs == [2,2,2] = 2
+  | otherwise = 0
+
+-- Количество открытых троек для каждого игрока
+countThrees :: Board -> (Int, Int)
+countThrees board = foldl (\(acc1, acc2) x -> case x of 
+                                            1 -> (acc1 + 1, acc2)
+                                            2 -> (acc1, acc2 + 1)
+                                            0 -> (acc1, acc2)) (0, 0) list
+  where
+    list = map hasOpenThree $ concatMap divideToFour (allLists board)
+
+-- Эвристика
+heuristic :: Board -> Int
+heuristic board
+  | isWin board == 1 = 10000
+  | c2 >= 1 = -10000
+  | otherwise = c1 
+  where
+    (c1, c2) = countThrees board
+
+-- Сравниваем доски по эвристике
+compareBoards :: Board -> Board -> Ordering
+compareBoards b1 b2 = compare (heuristic b1) (heuristic b2)
+
+-- Выбираем лучший ход
+makeMove :: Board -> Board
+makeMove board = case index of
+                    Nothing -> []
+                    Just i -> firstMove !! i
+  where
+    firstMove = possibleMoves 1 board
+    secondMove = map (maximumBy compareBoards) $ map (possibleMoves 2) firstMove 
+    index = elemIndex (maximumBy compareBoards secondMove) secondMove
+
+test = [[0,0,0,0,0,0,0], 
+        [0,0,0,0,0,0,0], 
+        [0,0,0,0,0,0,0], 
+        [0,0,0,0,0,2,0], 
+        [0,0,0,0,0,2,0],  
+        [1,0,1,0,0,2,0]] :: Board

@@ -4,6 +4,15 @@ import FRP.Helm
 import qualified FRP.Helm.Text as Text
 import Board
 
+type GameState = Int -- 0: none, 1: inGame, 2: finish
+type GameType = Int -- 0: user vs user, 1: user vs ai
+
+data State = State { gameState :: GameState,
+                     currentPlayer :: Player,
+                     board :: Board,
+                     keyboardBlock :: Bool --because we should filter the noise signals
+                   }
+
 playerToColor :: Player -> Color
 playerToColor 0 = white
 playerToColor 1 = red
