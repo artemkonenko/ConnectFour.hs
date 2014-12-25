@@ -1,0 +1,6 @@
+language: haskell
+before_install:
+  - chmod +x build_depends.sh
+  - ./build_depends.sh
+notifications:
+  email: true
