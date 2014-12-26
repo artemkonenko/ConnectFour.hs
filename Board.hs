@@ -96,10 +96,11 @@ countThrees board = foldl (\(acc1, acc2) x -> case x of
 -- Эвристика
 heuristic :: Board -> Int
 heuristic board
-  | isWin board == 1 = 10000
-  | c2 >= 1 = -10000
-  | otherwise = c1 
+  | p == 1 = 10000
+  | p == 2 = -10000
+  | otherwise = c1 - c2 
   where
+    p = isWin board
     (c1, c2) = countThrees board
 
 -- Сравниваем доски по эвристике
@@ -113,7 +114,7 @@ makeMove board = case index of
                     Just i -> firstMove !! i
   where
     firstMove = possibleMoves 1 board
-    secondMove = map (maximumBy compareBoards) $ map (possibleMoves 2) firstMove 
+    secondMove = map (minimumBy compareBoards) $ map (possibleMoves 2) firstMove 
     index = elemIndex (maximumBy compareBoards secondMove) secondMove
 
 test = [[0,0,0,0,0,0,0], 
