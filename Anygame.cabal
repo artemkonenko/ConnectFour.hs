@@ -13,12 +13,12 @@ maintainer:          yadummer@gmail.com
 -- copyright:           
 category:            Game
 build-type:          Simple
-extra-source-files:  README.md
+extra-source-files:  README.md, build_depends.sh
 cabal-version:       >=1.10
 
 executable Anygame
   main-is:             Main.hs
-  -- other-modules:       
+  -- other-modules:    Board, GameUI   
   -- other-extensions:    
   build-depends:       base >=4.6 && <4.7, helm >=0.7 && <0.8
   -- hs-source-dirs:      

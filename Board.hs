@@ -11,6 +11,9 @@ boardHeight = 6 :: Int
 
 type Player = Int -- 0: none, 1: red, 2: yellow
 
+emptyBoard :: Board
+emptyBoard = [[]]
+
 -- Enumerate board cells
 enumBoard :: Board -> EnumeratedBoard
 enumBoard board = zip (map (\x -> zip x [0..]) board) [0..]
