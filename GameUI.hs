@@ -47,13 +47,14 @@ stateToRenderlist (w,h) state = case gameState state of
   Start   -> [button (0,-100) blue "Press 1 to start game with player",
               button (0, 100) blue "Press 2 to start game with AI"]
   --(renderMessage "Press any 1-6 key to start.") ++ [button BTN_Normal (-100, 0) blue "Test"]
-  Game    -> renderBoard ++ renderTestMessage
-  WinEnd  -> renderBoard ++ (renderMessage ("Player " ++ (show $ currentPlayer state) ++ " win!"))
-  FailEnd -> (renderMessage "Any player defeat!")
+  Game    -> frame ++ renderBoard ++ renderTestMessage
+  WinEnd  -> frame ++ renderBoard ++ (renderMessage ("Player " ++ (show $ currentPlayer state) ++ " win!"))
+  FailEnd -> frame ++ renderBoard ++ (renderMessage "Any player defeat!")
   where
     renderBoard = concat (map (\(row, y) -> map (\(colour, x) -> stateToForm x y colour) row) (enumBoard $ board state))
     renderTestMessage = [move (100, 200) $ toForm $ Text.plainText $ "You shoud win"]
     renderMessage message = [messageBox (-25,-100) message]
+    frame = [move (-30, -20) $ outlined (solid white) $ rect 630 550]
 
 unblockState :: State -> State
 unblockState (State { gameState = gameState,
@@ -73,11 +74,11 @@ winEndState player board = State { gameState = WinEnd,
                           board = board,
                           gameType = VsUser}
 
-failEndState :: State
-failEndState = State { gameState = FailEnd,
+failEndState :: Board -> State
+failEndState board = State { gameState = FailEnd,
                           currentPlayer = 0,
                           keyboardBlock = True,
-                          board = emptyBoard,
+                          board = board,
                           gameType = VsUser}
 
 blockState :: State -> State

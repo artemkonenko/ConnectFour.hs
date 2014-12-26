@@ -23,7 +23,8 @@ step Nothing state = case gameState state of
                           VsAI    -> newAIBlockedState state
                           VsUser  -> unblockState state
                       else
-                        failEndState
+                        failEndState (board state)
+
 step (Just col) state = case gameState state of
   Start   ->  case col of
                 0 -> brandnewState VsUser
