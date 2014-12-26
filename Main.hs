@@ -7,24 +7,7 @@ import Board
 import GameUI
     
 step :: Maybe Int -> State -> State
-step Nothing state = case gameState state of
-  Start   -> state
-  Game    -> checkBoard state
-  WinEnd  -> state 
-  FailEnd -> state 
-  where
-    checkBoard :: State -> State -- check, that game still continue
-    checkBoard state =
-      case isWin (board state) of
-        1 -> winEndState 1 (board state)
-        2 -> winEndState 2 (board state)
-        otherwise ->  if notDead (board state) then
-                        case gameType state of
-                          VsAI    -> newAIBlockedState state
-                          VsUser  -> unblockState state
-                      else
-                        failEndState (board state)
-
+step Nothing state = unblockState state
 step (Just col) state = case gameState state of
   Start   ->  case col of
                 0 -> brandnewState VsUser

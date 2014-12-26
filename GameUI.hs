@@ -48,14 +48,15 @@ stateToRenderlist (w,h) state = case gameState state of
               button (0, 100) purple "Press 2 to start game with AI"]
   --(renderMessage "Press any 1-6 key to start.") ++ [button BTN_Normal (-100, 0) blue "Test"]
   Game    -> frame ++ renderBoard ++ renderTestMessage
-  WinEnd  -> frame ++ renderBoard ++ (renderMessage ("Player " ++ (show $ currentPlayer state) ++ " win!"))
+  WinEnd  -> frame ++ renderBoard ++ (renderMessage ( playerToTextlocor ++ " player win!"))
   FailEnd -> frame ++ renderBoard ++ (renderMessage "Any player defeat!")
   where
     renderBoard = concat (map (\(row, y) -> map (\(colour, x) -> stateToForm x y colour) row) (enumBoard $ board state))
-    renderTestMessage = [move (-30, 280) $ toForm $ Text.text $ textFormat $ "You must win"]
+    renderTestMessage = [move (-30, 280) $ toForm $ Text.text $ textFormat $ playerToTextlocor ++ " to move"]
     renderMessage message = [messageBox (-25,-100) message]
     frame = [move (-30, -20) $ outlined (solid white) $ rect 630 550]
     textFormat = (Text.color $ white) . Text.bold . Text.toText
+    playerToTextlocor = (if currentPlayer state == 1 then "Red" else "Yellow")
 
 unblockState :: State -> State
 unblockState (State { gameState = gameState,
@@ -94,37 +95,48 @@ blockState (State { gameState = gameState,
                               gameType = gameType}
 
 newBlockedState :: State -> Int -> Int -> State
-newBlockedState (State { gameState = gameState,
-                     currentPlayer = player,
-                     board = board,
-                     keyboardBlock = keyboardBlock,
-                     gameType = gameType }) row col = State { gameState = gameState,
-                              currentPlayer = (mod player 2) + 1,
-                              board = setChip col row player board,
-                              keyboardBlock = True,
-                              gameType = gameType}
-
-newAIBlockedState :: State -> State
-newAIBlockedState (State { gameState = gameState,
+newBlockedState state row col = case gameType state of
+                                  VsUser  -> checkBoard $ userStep state 
+                                  VsAI    -> case gameState . checkBoard $ userStep state of
+                                                Game -> checkBoard . aiStep $ userStep state
+                                                otherwise -> checkBoard $ userStep state
+  where
+    userStep (State { gameState = gameState,
                      currentPlayer = player,
                      board = board,
                      keyboardBlock = keyboardBlock,
                      gameType = gameType }) = State { gameState = gameState,
-                              currentPlayer = (mod player 2) + 1,
-                              board = makeMove board,
-                              keyboardBlock = False,
-                              gameType = gameType}
+                                                      currentPlayer = (mod player 2) + 1,
+                                                      board = setChip col row player board,
+                                                      keyboardBlock = True,
+                                                      gameType = gameType}
+    aiStep (State { gameState = gameState,
+                     currentPlayer = player,
+                     board = board,
+                     keyboardBlock = keyboardBlock,
+                     gameType = gameType }) = State { gameState = gameState,
+                                                      currentPlayer = (mod player 2) + 1,
+                                                      board = makeMove board,
+                                                      keyboardBlock = keyboardBlock,
+                                                      gameType = gameType}
+    checkBoard :: State -> State -- check, that game still continue
+    checkBoard state =
+      case isWin (board state) of
+        1 -> winEndState 1 (board state)
+        2 -> winEndState 2 (board state)
+        otherwise ->  if notDead (board state) then
+                        state
+                      else
+                        failEndState (board state)
 
 brandnewState :: GameType -> State
 brandnewState gameType = State { gameState = Game,
-                        currentPlayer = 1,
+                        currentPlayer = 2,
                         keyboardBlock = False,
                         board = replicate boardHeight $ replicate boardWidth 0,
                         gameType = gameType}
 
 ---------------------- UI elements
---data ButtonType = BTN_Normal | BTN_Hovered | BTN_Pressed
-
 button :: (Int, Int) -> Color -> String -> Form
 button (x, y) color msg = move (fromIntegral x, fromIntegral y) $ group [base, shadow, message]
   where
