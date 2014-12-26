@@ -18,7 +18,7 @@ data State = State { gameState :: GameState
 --gameState :: State -> GameState
 --gameState (State {gameState = gameState}) = gameState
 
-windowWidth = 800 :: Int
+windowWidth = 700 :: Int
 windowHeight= 700 :: Int
 
 engineConfig :: EngineConfig
@@ -29,7 +29,7 @@ engineConfig = EngineConfig { windowDimensions = (windowWidth, windowHeight),
                             }
 
 render :: (Int, Int) -> State -> Element
-render (w, h) state = centeredCollage w h (stateToRenderlist (w,h) state) 
+render (w, h) state = centeredCollage w h (renderState (w,h) state) 
 
 playerToColor :: Player -> Color
 playerToColor 0 = white
@@ -37,26 +37,30 @@ playerToColor 1 = red
 playerToColor 2 = yellow
 
 coordToForm :: Int -> Int -> (Form -> Form)
-coordToForm x y = move ((fromIntegral x) * 90 - 275, (fromIntegral y) * 90 - 200)
+coordToForm x y = move ((fromIntegral x) * 90 - 270, (fromIntegral y) * 90 - 190)
 
 stateToForm :: Int -> Int -> Player -> Form
 stateToForm x y player = coordToForm x y $ filled (playerToColor player) $ circle 40
 
-stateToRenderlist :: (Int, Int) -> State -> [Form]
-stateToRenderlist (w,h) state = case gameState state of
-  Start   -> [button (0,-100) purple "Press 1 to start game with player",
-              button (0, 100) purple "Press 2 to start game with AI"]
-  --(renderMessage "Press any 1-6 key to start.") ++ [button BTN_Normal (-100, 0) blue "Test"]
-  Game    -> renderBoard ++ renderTestMessage
-  WinEnd  -> renderBoard ++ (renderMessage ( playerToTextlocor ++ " player win!"))
-  FailEnd -> renderBoard ++ (renderMessage "Any player defeat!")
+renderState :: (Int, Int) -> State -> [Form]
+renderState (w,h) state = background playerColor : case gameState state of
+  Start   -> [selectGameButtons]
+  Game    -> [renderBoard]
+  WinEnd  -> [renderBoard, renderMessage ( playerToTextlocor ++ " player win!"), moveY (40) selectGameButtons]
+  FailEnd -> [renderBoard, renderMessage "Any player defeat!", moveY (40) selectGameButtons]
   where
-    renderBoard = background ++ (concat (map (\(row, y) -> map (\(colour, x) -> stateToForm x y colour) row) (enumBoard $ board state)))
-    renderTestMessage = [move (-5, 320) $ toForm $ Text.text $ textFormat $ playerToTextlocor ++ "'s turn"]
-    renderMessage message = [messageBox (-5, -100) message]
-    background = [move (-355, -360) $ toForm $ image 700 700 "background.png"]
+    renderBoard = group $ (concat (map (\(row, y) -> map (\(colour, x) -> stateToForm x y colour) row) (enumBoard $ board state)))
+    renderMessage message = messageBox black playerColor (0,-100) message
+    background color = move (-350, -350) $ toForm $ image 700 700 $ if color == red then
+                                                                      "img/backgroundred.png"
+                                                                    else
+                                                                      "img/backgroundyellow.png"
     textFormat = (Text.color $ white) . Text.bold . Text.toText
     playerToTextlocor = (if currentPlayer state == 1 then "Red" else "Yellow")
+    selectGameButtons = group [btns (0, 0)   "Press 1 to start game with player",
+                               btns (0, 100) "Press 2 to start game with AI"]
+    btns = button black playerColor
+    playerColor = playerToColor $ currentPlayer state
 
 unblockState :: State -> State
 unblockState (State { gameState = gameState,
@@ -137,21 +141,23 @@ brandnewState gameType = State { gameState = Game,
                         gameType = gameType}
 
 ---------------------- UI elements
-button :: (Int, Int) -> Color -> String -> Form
-button (x, y) color msg = move (fromIntegral x, fromIntegral y) $ group [base, shadow, message]
+button :: Color -> Color -> (Int, Int) -> String -> Form
+button bgcolor txtcolor (x, y) msg = move (fromIntegral x, fromIntegral y) $ group [base, message]
   where
-    base = filled color $ rect (40 + 11 * (fromIntegral $ length msg)) 80
+    curvone = filled bgcolor $ circle 40
+    curvs = group [move ((11 * (fromIntegral $ length msg)) / 2,  0) curvone
+                  ,move (-(11 * (fromIntegral $ length msg)) / 2, 0) curvone]
+    base = group [curvs, filled bgcolor $ rect (11 * (fromIntegral $ length msg)) 80]
+    message = toForm $ Text.text $ textFormat $ msg
+    textFormat = (Text.color $ txtcolor) . Text.bold . Text.toText
+
+messageBox :: Color -> Color -> (Int, Int)-> String -> Form
+messageBox bgcolor txtcolor (x, y) msg = move (fromIntegral x, fromIntegral y) $ group [base, shadow, message]
+  where
+    curvone = filled bgcolor $ circle 50
+    curvs = group [move ((22 * (fromIntegral $ length msg)) / 2,  0) curvone
+                  ,move ((-22 * (fromIntegral $ length msg)) / 2, 0) curvone]
+    base = group [curvs, filled bgcolor $ rect (22 * (fromIntegral $ length msg)) 100]
     shadow = move (-2, -2) base
     message = toForm $ Text.text $ textFormat $ msg
-   -- textFormat = (Text.color $ yellow) . Text.bold . Text.toText
-    textFormat = (Text.color $ white) . Text.bold . Text.toText
-
-messageBox :: (Int, Int)-> String -> Form
-messageBox (x, y) msg = move (fromIntegral x, fromIntegral y) $ group [base, shadow, message]
-  where
-    base = filled purple $ rect (250 + 11 * (fromIntegral $ length msg)) 100
-    shadow = move (-2, -2) base
-    message = toForm $ Text.text $ textFormat $ msg
-    textFormat = (Text.color $ white) . Text.bold . Text.header . Text.toText
-
---button btntype (x, y) color massage = move (fromIntegral x, fromIntegral y) $ filled color $ RectangleShape (200, 350)
+    textFormat = (Text.color $ txtcolor) . Text.bold . Text.header . Text.toText

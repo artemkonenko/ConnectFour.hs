@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                Anygame
-version:             0.1
+version:             0.3
 -- synopsis:            
 -- description:         
 homepage:            https://github.com/dummer/FPanygame
@@ -13,13 +13,13 @@ maintainer:          yadummer@gmail.com
 -- copyright:           
 category:            Game
 build-type:          Simple
-extra-source-files:  README.md, build_depends.sh
+extra-source-files:  README.md, build_depends.sh, img/backgroundred.png, img/backgroundyellow.png
 cabal-version:       >=1.10
 
 executable Anygame
   main-is:             Main.hs
-  -- other-modules:    Board, GameUI   
+  other-modules:    Board, GameUI   
   -- other-extensions:    
   build-depends:       base >=4.6 && <4.7, helm >=0.7 && <0.8
-  -- hs-source-dirs:      
+  hs-source-dirs:      src
   default-language:    Haskell2010
