@@ -19,11 +19,16 @@ step Nothing state = case gameState state of
         1 -> winEndState 1
         2 -> winEndState 2
         otherwise ->  if notDead (board state) then
-                        unblockState state
+                        case gameType state of
+                          VsAI    -> newAIBlockedState state
+                          VsUser  -> unblockState state
                       else
                         failEndState
 step (Just col) state = case gameState state of
-  Start   ->  brandnewState (gameType state)
+  Start   ->  case col of
+                0 -> brandnewState VsUser
+                1 -> brandnewState VsAI
+                otherwise -> state
   Game    ->  if (keyboardBlock state) then
               unblockState state
             else

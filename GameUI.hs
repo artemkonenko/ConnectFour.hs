@@ -44,7 +44,9 @@ stateToForm x y player = coordToForm x y $ filled (playerToColor player) $ circl
 
 stateToRenderlist :: (Int, Int) -> State -> [Form]
 stateToRenderlist (w,h) state = case gameState state of
-  Start   -> (renderMessage "Press any 1-6 key to start.")
+  Start   -> [button (0,-100) blue "Press 1 to start game with player",
+              button (0, 100) blue "Press 2 to start game with AI"]
+  --(renderMessage "Press any 1-6 key to start.") ++ [button BTN_Normal (-100, 0) blue "Test"]
   Game    -> renderBoard ++ renderTestMessage
   WinEnd  -> (renderMessage ("Player " ++ (show $ currentPlayer state) ++ " win!"))
   FailEnd -> (renderMessage "Any player defeat!")
@@ -102,9 +104,33 @@ newBlockedState (State { gameState = gameState,
                               keyboardBlock = True,
                               gameType = gameType}
 
+newAIBlockedState :: State -> State
+newAIBlockedState (State { gameState = gameState,
+                     currentPlayer = player,
+                     board = board,
+                     keyboardBlock = keyboardBlock,
+                     gameType = gameType }) = State { gameState = gameState,
+                              currentPlayer = (mod player 2) + 1,
+                              board = makeMove board,
+                              keyboardBlock = False,
+                              gameType = gameType}
+
 brandnewState :: GameType -> State
 brandnewState gameType = State { gameState = Game,
                         currentPlayer = 1,
                         keyboardBlock = False,
                         board = replicate boardHeight $ replicate boardWidth 0,
                         gameType = gameType}
+
+---------------------- UI elements
+--data ButtonType = BTN_Normal | BTN_Hovered | BTN_Pressed
+
+button :: (Int, Int) -> Color -> String -> Form
+button (x, y) color msg = move (fromIntegral x, fromIntegral y) $ group [base, shadow, message]
+  where
+    base = filled color $ rect (40 + 11 * (fromIntegral $ length msg)) 80
+    shadow = move (-2, -2) base
+    message = toForm $ Text.text $ textFormat $ msg
+    textFormat = (Text.color $ yellow) . Text.bold . Text.toText
+
+--button btntype (x, y) color massage = move (fromIntegral x, fromIntegral y) $ filled color $ RectangleShape (200, 350)
