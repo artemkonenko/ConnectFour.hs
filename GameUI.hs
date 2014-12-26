@@ -44,17 +44,18 @@ stateToForm x y player = coordToForm x y $ filled (playerToColor player) $ circl
 
 stateToRenderlist :: (Int, Int) -> State -> [Form]
 stateToRenderlist (w,h) state = case gameState state of
-  Start   -> [button (0,-100) blue "Press 1 to start game with player",
-              button (0, 100) blue "Press 2 to start game with AI"]
+  Start   -> [button (0,-100) purple "Press 1 to start game with player",
+              button (0, 100) purple "Press 2 to start game with AI"]
   --(renderMessage "Press any 1-6 key to start.") ++ [button BTN_Normal (-100, 0) blue "Test"]
   Game    -> frame ++ renderBoard ++ renderTestMessage
   WinEnd  -> frame ++ renderBoard ++ (renderMessage ("Player " ++ (show $ currentPlayer state) ++ " win!"))
   FailEnd -> frame ++ renderBoard ++ (renderMessage "Any player defeat!")
   where
     renderBoard = concat (map (\(row, y) -> map (\(colour, x) -> stateToForm x y colour) row) (enumBoard $ board state))
-    renderTestMessage = [move (100, 200) $ toForm $ Text.plainText $ "You shoud win"]
+    renderTestMessage = [move (-30, 280) $ toForm $ Text.text $ textFormat $ "You must win"]
     renderMessage message = [messageBox (-25,-100) message]
     frame = [move (-30, -20) $ outlined (solid white) $ rect 630 550]
+    textFormat = (Text.color $ white) . Text.bold . Text.toText
 
 unblockState :: State -> State
 unblockState (State { gameState = gameState,
@@ -130,7 +131,8 @@ button (x, y) color msg = move (fromIntegral x, fromIntegral y) $ group [base, s
     base = filled color $ rect (40 + 11 * (fromIntegral $ length msg)) 80
     shadow = move (-2, -2) base
     message = toForm $ Text.text $ textFormat $ msg
-    textFormat = (Text.color $ yellow) . Text.bold . Text.toText
+   -- textFormat = (Text.color $ yellow) . Text.bold . Text.toText
+    textFormat = (Text.color $ white) . Text.bold . Text.toText
 
 messageBox :: (Int, Int)-> String -> Form
 messageBox (x, y) msg = move (fromIntegral x, fromIntegral y) $ group [base, shadow, message]
