@@ -109,11 +109,13 @@ compareBoards b1 b2 = compare (heuristic b1) (heuristic b2)
 
 -- Выбираем лучший ход
 makeMove :: Board -> Board
-makeMove board = case index of
-                    Nothing -> []
-                    Just i -> firstMove !! i
+makeMove board = if (heuristic maxFirstMove == 10000) then maxFirstMove
+                 else case index of
+                        Nothing -> []
+                        Just i -> firstMove !! i
   where
     firstMove = possibleMoves 1 board
+    maxFirstMove = maximumBy compareBoards firstMove
     secondMove = map (minimumBy compareBoards) $ map (possibleMoves 2) firstMove 
     index = elemIndex (maximumBy compareBoards secondMove) secondMove
 

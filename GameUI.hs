@@ -48,14 +48,12 @@ stateToRenderlist (w,h) state = case gameState state of
               button (0, 100) blue "Press 2 to start game with AI"]
   --(renderMessage "Press any 1-6 key to start.") ++ [button BTN_Normal (-100, 0) blue "Test"]
   Game    -> renderBoard ++ renderTestMessage
-  WinEnd  -> (renderMessage ("Player " ++ (show $ currentPlayer state) ++ " win!"))
+  WinEnd  -> renderBoard ++ (renderMessage ("Player " ++ (show $ currentPlayer state) ++ " win!"))
   FailEnd -> (renderMessage "Any player defeat!")
   where
     renderBoard = concat (map (\(row, y) -> map (\(colour, x) -> stateToForm x y colour) row) (enumBoard $ board state))
     renderTestMessage = [move (100, 200) $ toForm $ Text.plainText $ "You shoud win"]
-    renderMessage message = [move (0, -100) $ toForm $ Text.text $ textFormat $ message ]
-    textFormat = (Text.color $ textColor) . Text.bold . Text.header . Text.toText
-    textColor = green
+    renderMessage message = [messageBox (-25,-100) message]
 
 unblockState :: State -> State
 unblockState (State { gameState = gameState,
@@ -68,11 +66,11 @@ unblockState (State { gameState = gameState,
                               keyboardBlock = False,
                               gameType = gameType}
 
-winEndState :: Player -> State
-winEndState player = State { gameState = WinEnd,
+winEndState :: Player -> Board -> State
+winEndState player board = State { gameState = WinEnd,
                           currentPlayer = player,
                           keyboardBlock = True,
-                          board = emptyBoard,
+                          board = board,
                           gameType = VsUser}
 
 failEndState :: State
@@ -132,5 +130,13 @@ button (x, y) color msg = move (fromIntegral x, fromIntegral y) $ group [base, s
     shadow = move (-2, -2) base
     message = toForm $ Text.text $ textFormat $ msg
     textFormat = (Text.color $ yellow) . Text.bold . Text.toText
+
+messageBox :: (Int, Int)-> String -> Form
+messageBox (x, y) msg = move (fromIntegral x, fromIntegral y) $ group [base, shadow, message]
+  where
+    base = filled purple $ rect (250 + 11 * (fromIntegral $ length msg)) 100
+    shadow = move (-2, -2) base
+    message = toForm $ Text.text $ textFormat $ msg
+    textFormat = (Text.color $ white) . Text.bold . Text.header . Text.toText
 
 --button btntype (x, y) color massage = move (fromIntegral x, fromIntegral y) $ filled color $ RectangleShape (200, 350)

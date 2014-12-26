@@ -16,8 +16,8 @@ step Nothing state = case gameState state of
     checkBoard :: State -> State -- check, that game still continue
     checkBoard state =
       case isWin (board state) of
-        1 -> winEndState 1
-        2 -> winEndState 2
+        1 -> winEndState 1 (board state)
+        2 -> winEndState 2 (board state)
         otherwise ->  if notDead (board state) then
                         case gameType state of
                           VsAI    -> newAIBlockedState state
