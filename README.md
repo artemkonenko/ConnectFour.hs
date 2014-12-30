@@ -2,7 +2,7 @@ ConnectFour.hs
 =========
 The "Connect Four" game implemented in Haskell using [Helm](https://github.com/switchface/helm) library.
 
-[![Build Status](https://travis-ci.org/dummer/FPanygame.svg?branch=master)](https://travis-ci.org/dummer/FPanygame)
+[![Build Status](https://travis-ci.org/dummer/ConnectFour.hs.svg?branch=master)](https://travis-ci.org/dummer/ConnectFour.hs)
 
 Build and run
 ========
