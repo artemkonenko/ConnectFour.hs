@@ -19,7 +19,7 @@ data State = State { gameState :: GameState
 --gameState (State {gameState = gameState}) = gameState
 
 windowWidth = 800 :: Int
-windowHeight= 600 :: Int
+windowHeight= 700 :: Int
 
 engineConfig :: EngineConfig
 engineConfig = EngineConfig { windowDimensions = (windowWidth, windowHeight),
@@ -37,7 +37,7 @@ playerToColor 1 = red
 playerToColor 2 = yellow
 
 coordToForm :: Int -> Int -> (Form -> Form)
-coordToForm x y = move ((fromIntegral x) * 90 - 300, (fromIntegral y) * 90 - 250)
+coordToForm x y = move ((fromIntegral x) * 90 - 275, (fromIntegral y) * 90 - 200)
 
 stateToForm :: Int -> Int -> Player -> Form
 stateToForm x y player = coordToForm x y $ filled (playerToColor player) $ circle 40
@@ -47,14 +47,14 @@ stateToRenderlist (w,h) state = case gameState state of
   Start   -> [button (0,-100) purple "Press 1 to start game with player",
               button (0, 100) purple "Press 2 to start game with AI"]
   --(renderMessage "Press any 1-6 key to start.") ++ [button BTN_Normal (-100, 0) blue "Test"]
-  Game    -> frame ++ renderBoard ++ renderTestMessage
-  WinEnd  -> frame ++ renderBoard ++ (renderMessage ( playerToTextlocor ++ " player win!"))
-  FailEnd -> frame ++ renderBoard ++ (renderMessage "Any player defeat!")
+  Game    -> renderBoard ++ renderTestMessage
+  WinEnd  -> renderBoard ++ (renderMessage ( playerToTextlocor ++ " player win!"))
+  FailEnd -> renderBoard ++ (renderMessage "Any player defeat!")
   where
-    renderBoard = concat (map (\(row, y) -> map (\(colour, x) -> stateToForm x y colour) row) (enumBoard $ board state))
-    renderTestMessage = [move (-30, 280) $ toForm $ Text.text $ textFormat $ playerToTextlocor ++ " to move"]
-    renderMessage message = [messageBox (-25,-100) message]
-    frame = [move (-30, -20) $ outlined (solid white) $ rect 630 550]
+    renderBoard = background ++ (concat (map (\(row, y) -> map (\(colour, x) -> stateToForm x y colour) row) (enumBoard $ board state)))
+    renderTestMessage = [move (-5, 320) $ toForm $ Text.text $ textFormat $ playerToTextlocor ++ "'s turn"]
+    renderMessage message = [messageBox (-5, -100) message]
+    background = [move (-355, -360) $ toForm $ image 700 700 "background.png"]
     textFormat = (Text.color $ white) . Text.bold . Text.toText
     playerToTextlocor = (if currentPlayer state == 1 then "Red" else "Yellow")
 
