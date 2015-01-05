@@ -62,41 +62,25 @@ renderState (w,h) state = background playerColor : case gameState state of
     btns = button black playerColor
     playerColor = playerToColor $ currentPlayer state
 
-unblockState :: State -> State
-unblockState (State { gameState = gameState,
-                     currentPlayer = player,
-                     board = board,
-                     keyboardBlock = keyboardBlock,
-                     gameType = gameType }) = State { gameState = gameState,
-                              currentPlayer = player,
-                              board = board,
-                              keyboardBlock = False,
-                              gameType = gameType}
-
 winEndState :: Player -> Board -> State
-winEndState player board = State { gameState = WinEnd,
-                          currentPlayer = player,
-                          keyboardBlock = True,
-                          board = board,
-                          gameType = VsUser}
+winEndState player board = State {gameState = WinEnd,
+                                  currentPlayer = player,
+                                  keyboardBlock = True,
+                                  board = board,
+                                  gameType = VsUser}
 
 failEndState :: Board -> State
-failEndState board = State { gameState = FailEnd,
-                          currentPlayer = 0,
-                          keyboardBlock = True,
-                          board = board,
-                          gameType = VsUser}
+failEndState board = State {gameState = FailEnd,
+                            currentPlayer = 0,
+                            keyboardBlock = True,
+                            board = board,
+                            gameType = VsUser}
 
 blockState :: State -> State
-blockState (State { gameState = gameState,
-                     currentPlayer = player,
-                     board = board,
-                     keyboardBlock = keyboardBlock,
-                     gameType = gameType }) = State { gameState = gameState,
-                              currentPlayer = player,
-                              board = board,
-                              keyboardBlock = True,
-                              gameType = gameType}
+blockState state  = state { keyboardBlock = True}
+
+unblockState :: State -> State
+unblockState state = state { keyboardBlock = False }
 
 newBlockedState :: State -> Int -> Int -> State
 newBlockedState state row col = case gameType state of
@@ -105,24 +89,11 @@ newBlockedState state row col = case gameType state of
                                                 Game -> checkBoard . aiStep $ userStep state
                                                 otherwise -> checkBoard $ userStep state
   where
-    userStep (State { gameState = gameState,
-                     currentPlayer = player,
-                     board = board,
-                     keyboardBlock = keyboardBlock,
-                     gameType = gameType }) = State { gameState = gameState,
-                                                      currentPlayer = (mod player 2) + 1,
-                                                      board = setChip col row player board,
-                                                      keyboardBlock = True,
-                                                      gameType = gameType}
-    aiStep (State { gameState = gameState,
-                     currentPlayer = player,
-                     board = board,
-                     keyboardBlock = keyboardBlock,
-                     gameType = gameType }) = State { gameState = gameState,
-                                                      currentPlayer = (mod player 2) + 1,
-                                                      board = makeMove board,
-                                                      keyboardBlock = keyboardBlock,
-                                                      gameType = gameType}
+    userStep state = state{ currentPlayer = (mod (currentPlayer state) 2) + 1,
+                            board = setChip col row (currentPlayer state) (board state),
+                            keyboardBlock = True }
+    aiStep state = state{ currentPlayer = (mod (currentPlayer state) 2) + 1,
+                          board = makeMove (board state)}
     checkBoard :: State -> State -- check, that game still continue
     checkBoard state =
       case isWin (board state) of
@@ -134,11 +105,11 @@ newBlockedState state row col = case gameType state of
                         failEndState (board state)
 
 brandnewState :: GameType -> State
-brandnewState gameType = State { gameState = Game,
-                        currentPlayer = 2,
-                        keyboardBlock = False,
-                        board = replicate boardHeight $ replicate boardWidth 0,
-                        gameType = gameType}
+brandnewState gameType = State {gameState = Game,
+                                currentPlayer = 2,
+                                keyboardBlock = False,
+                                board = replicate boardHeight $ replicate boardWidth 0,
+                                gameType = gameType}
 
 ---------------------- UI elements
 button :: Color -> Color -> (Int, Int) -> String -> Form

@@ -32,7 +32,7 @@ freeRow col board = case findIndex (/=0) $ map (!!col) board of
                         | row /= 0  -> Just (row - 1)
                         | otherwise -> Nothing
 
--- Все возможные ходы игрока
+-- All possible players moves
 possibleMoves :: Player -> Board -> [Board]
 possibleMoves player board = filter (not . null) $ zipWith 
          (\row j -> case row of
@@ -41,11 +41,10 @@ possibleMoves player board = filter (not . null) $ zipWith
   where
     indices = zipWith freeRow [0..boardWidth-1] (replicate boardWidth board)
 
--- Можно ли сделать какой-либо ход
+-- Is it possible to make any move?
 notDead :: Board -> Bool
 notDead board = or $ map (\x -> any (== 0) x) board 
 
--- Получаем все диагонали
 getDiagonals :: Board -> [[Int]]
 getDiagonals board = zipWith diagonal iIndices jIndices
   where
@@ -55,11 +54,11 @@ getDiagonals board = zipWith diagonal iIndices jIndices
     iIndices = iInd ++ (map reverse $ reverse iInd)
     jIndices = jInd ++ jInd
 
--- Все строки, столбцы и диагонали (len >= 4) доски
+-- All rows, columns and diagonals (len> = 4) on board
 allLists :: Board -> [[Int]]
 allLists board = board ++ (transpose board) ++ (getDiagonals board)
 
--- Есть ли собранная четверка в строке, 0 - нет собранной четверки
+-- Do collected four in a row, 0 - no collected four
 hasConnectedFour :: [Int] -> Player
 hasConnectedFour xs 
   | any (== [1,1,1,1]) grouped = 1
@@ -68,23 +67,23 @@ hasConnectedFour xs
   where
     grouped = group xs
 
--- Выиграл ли кто-нибудь, 0 - никто не выиграл
+-- Won anyone, 0 - no one wins
 isWin :: Board -> Player
 isWin board = fromMaybe 0 $ find (/= 0) $ map hasConnectedFour (allLists board)
 
--- Разбиваем список на подсписки по 4 элемента
+-- Splitting a list into sublists by 4 elements
 divideToFour :: [Int] -> [[Int]]
 divideToFour [_,_,_] = []
 divideToFour xs = [take 4 xs] ++ (divideToFour (drop 1 xs))
 
--- Есть ли открытая тройка в строке, 0 - нет открытой тройки
+-- Is there an open triple in a row, 0 - no open triples
 hasOpenThree :: [Int] -> Player
 hasOpenThree xs
   | delete 0 xs == [1,1,1] = 1
   | delete 0 xs == [2,2,2] = 2
   | otherwise = 0
 
--- Количество открытых троек для каждого игрока
+-- The number of open threes for each player
 countThrees :: Board -> (Int, Int)
 countThrees board = foldl (\(acc1, acc2) x -> case x of 
                                             1 -> (acc1 + 1, acc2)
@@ -93,9 +92,8 @@ countThrees board = foldl (\(acc1, acc2) x -> case x of
   where
     list = map hasOpenThree $ concatMap divideToFour (allLists board)
 
--- Эвристика
-heuristic :: Board -> Int
-heuristic board
+heuristics :: Board -> Int
+heuristics board
   | p == 1 = 10000
   | p == 2 = -10000
   | otherwise = c1 - c2 
@@ -103,13 +101,13 @@ heuristic board
     p = isWin board
     (c1, c2) = countThrees board
 
--- Сравниваем доски по эвристике
+-- Compare boards on heuristics
 compareBoards :: Board -> Board -> Ordering
-compareBoards b1 b2 = compare (heuristic b1) (heuristic b2)
+compareBoards b1 b2 = compare (heuristics b1) (heuristics b2)
 
--- Выбираем лучший ход
+-- Choosing the best move
 makeMove :: Board -> Board
-makeMove board = if (heuristic maxFirstMove == 10000) then maxFirstMove
+makeMove board = if (heuristics maxFirstMove == 10000) then maxFirstMove
                  else case index of
                         Nothing -> []
                         Just i -> firstMove !! i
