@@ -1,8 +1,7 @@
 import FRP.Helm
-import FRP.Helm.Utilities
 import qualified FRP.Helm.Keyboard as Keyboard
 import qualified FRP.Helm.Window as Window
-import Data.List (elemIndex,findIndex)
+import Data.List (elemIndex)
 import Board
 import GameUI
     
@@ -22,7 +21,7 @@ step (Just col) state = case gameState state of
     selectGame = case col of
                   0 -> brandnewState VsUser
                   1 -> brandnewState VsAI
-                  otherwise -> state
+                  _ -> state
     
 main :: IO ()
 main = run engineConfig $ render <~ Window.dimensions ~~ stepper

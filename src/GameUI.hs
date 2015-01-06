@@ -14,12 +14,11 @@ data State = State { gameState :: GameState
                    , gameType :: GameType
                    }
 
--- We need some getters
---gameState :: State -> GameState
---gameState (State {gameState = gameState}) = gameState
+windowWidth :: Int
+windowWidth = 700
 
-windowWidth = 700 :: Int
-windowHeight= 700 :: Int
+windowHeight :: Int
+windowHeight = 700
 
 engineConfig :: EngineConfig
 engineConfig = EngineConfig { windowDimensions = (windowWidth, windowHeight),
@@ -29,7 +28,7 @@ engineConfig = EngineConfig { windowDimensions = (windowWidth, windowHeight),
                             }
 
 render :: (Int, Int) -> State -> Element
-render (w, h) state = centeredCollage w h (renderState (w,h) state) 
+render (w, h) state = centeredCollage w h (renderState state) 
 
 playerToColor :: Player -> Color
 playerToColor 0 = white
@@ -42,8 +41,8 @@ coordToForm x y = move ((fromIntegral x) * 90 - 270, (fromIntegral y) * 90 - 190
 stateToForm :: Int -> Int -> Player -> Form
 stateToForm x y player = coordToForm x y $ filled (playerToColor player) $ circle 40
 
-renderState :: (Int, Int) -> State -> [Form]
-renderState (w,h) state = background playerColor : case gameState state of
+renderState :: State -> [Form]
+renderState state = background playerColor : case gameState state of
   Start   -> [selectGameButtons]
   Game    -> [renderBoard]
   WinEnd  -> [renderBoard, renderMessage ( playerToTextlocor ++ " player win!"), moveY (40) selectGameButtons]
@@ -55,7 +54,6 @@ renderState (w,h) state = background playerColor : case gameState state of
                                                                       "img/backgroundred.png"
                                                                     else
                                                                       "img/backgroundyellow.png"
-    textFormat = (Text.color $ white) . Text.bold . Text.toText
     playerToTextlocor = (if currentPlayer state == 1 then "Red" else "Yellow")
     selectGameButtons = group [btns (0, 0)   "Press 1 to start game with player",
                                btns (0, 100) "Press 2 to start game with AI"]
@@ -63,17 +61,17 @@ renderState (w,h) state = background playerColor : case gameState state of
     playerColor = playerToColor $ currentPlayer state
 
 winEndState :: Player -> Board -> State
-winEndState player board = State {gameState = WinEnd,
+winEndState player newboard = State {gameState = WinEnd,
                                   currentPlayer = player,
                                   keyboardBlock = True,
-                                  board = board,
+                                  board = newboard,
                                   gameType = VsUser}
 
 failEndState :: Board -> State
-failEndState board = State {gameState = FailEnd,
+failEndState newboard = State {gameState = FailEnd,
                             currentPlayer = 0,
                             keyboardBlock = True,
-                            board = board,
+                            board = newboard,
                             gameType = VsUser}
 
 blockState :: State -> State
@@ -84,32 +82,32 @@ unblockState state = state { keyboardBlock = False }
 
 newBlockedState :: State -> Int -> Int -> State
 newBlockedState state row col = case gameType state of
-                                  VsUser  -> checkBoard $ userStep state 
-                                  VsAI    -> case gameState . checkBoard $ userStep state of
-                                                Game -> checkBoard . aiStep $ userStep state
-                                                otherwise -> checkBoard $ userStep state
+                                  VsUser  -> checkBoard $ userStep 
+                                  VsAI    -> case gameState . checkBoard $ userStep of
+                                                Game -> checkBoard . aiStep $ userStep
+                                                _    -> checkBoard $ userStep
   where
-    userStep state = state{ currentPlayer = (mod (currentPlayer state) 2) + 1,
+    userStep = state{ currentPlayer = (mod (currentPlayer state) 2) + 1,
                             board = setChip col row (currentPlayer state) (board state),
                             keyboardBlock = True }
-    aiStep state = state{ currentPlayer = (mod (currentPlayer state) 2) + 1,
-                          board = makeMove (board state)}
+    aiStep stateAfterStep = stateAfterStep { currentPlayer = (mod (currentPlayer state) 2) + 1,
+                                             board = makeMove (board state)}
     checkBoard :: State -> State -- check, that game still continue
-    checkBoard state =
-      case isWin (board state) of
-        1 -> winEndState 1 (board state)
-        2 -> winEndState 2 (board state)
-        otherwise ->  if notDead (board state) then
-                        state
-                      else
-                        failEndState (board state)
+    checkBoard stateAfterStep =
+      case isWin (board stateAfterStep) of
+        1 ->  winEndState 1 (board stateAfterStep)
+        2 ->  winEndState 2 (board stateAfterStep)
+        _ ->  if notDead (board stateAfterStep) then
+                stateAfterStep
+              else
+                failEndState (board stateAfterStep)
 
 brandnewState :: GameType -> State
-brandnewState gameType = State {gameState = Game,
+brandnewState newGameType = State {gameState = Game,
                                 currentPlayer = 2,
                                 keyboardBlock = False,
                                 board = replicate boardHeight $ replicate boardWidth 0,
-                                gameType = gameType}
+                                gameType = newGameType}
 
 ---------------------- UI elements
 button :: Color -> Color -> (Int, Int) -> String -> Form

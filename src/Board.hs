@@ -6,8 +6,11 @@ import Data.Maybe
 type Board = [[Int]]
 type EnumeratedBoard = [([(Int, Int)], Int)]
 
-boardWidth = 7 :: Int
-boardHeight = 6 :: Int
+boardWidth :: Int
+boardWidth = 7
+
+boardHeight :: Int
+boardHeight = 6 
 
 type Player = Int -- 0: none, 1: red, 2: yellow
 
@@ -20,9 +23,9 @@ enumBoard board = zip (map (\x -> zip x [0..]) board) [0..]
 
 -- Player set chip into (x, y). Yet another, but more readable. 
 setChip :: Int -> Int -> Player -> Board -> Board
-setChip col row curPlayer board = map (\(row, y) -> map (\(player, x) -> chipMap x y player) row) (enumBoard board)
+setChip tocol torow curPlayer board = map (\(row, y) -> map (\(player, x) -> chipMap x y player) row) (enumBoard board)
   where
-    chipMap x y player = if (x == col && y == row) then curPlayer else player
+    chipMap x y player = if (x == tocol && y == torow) then curPlayer else player
 
 -- Index of free row in certain collumn
 freeRow :: Int -> Board -> Maybe Int
@@ -116,10 +119,3 @@ makeMove board = if (heuristics maxFirstMove == 10000) then maxFirstMove
     maxFirstMove = maximumBy compareBoards firstMove
     secondMove = map (minimumBy compareBoards) $ map (possibleMoves 2) firstMove 
     index = elemIndex (maximumBy compareBoards secondMove) secondMove
-
-test = [[0,0,0,0,0,0,0], 
-        [0,0,0,0,0,0,0], 
-        [0,0,0,0,0,0,0], 
-        [0,0,0,0,0,2,0], 
-        [0,0,0,0,0,2,0],  
-        [1,0,1,0,0,2,0]] :: Board
