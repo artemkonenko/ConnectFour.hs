@@ -2,5 +2,8 @@ language: haskell
 before_install:
   - chmod +x build_depends.sh
   - ./build_depends.sh
+install:
+  - cabal update
+  - cabal install --only-dependencies
 notifications:
   email: true
